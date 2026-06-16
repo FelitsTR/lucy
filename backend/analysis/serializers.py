@@ -3,6 +3,21 @@ from rest_framework import serializers
 
 
 class AudioAnalysisSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = AudioAnalysis
-        fields = '__all__'
+        fields = [
+            'id',
+            'file',
+            'bpm',
+            'duration',
+            'beats',
+            'created_at'
+        ]
+        read_only_fields = [
+            'id',
+            'bpm',
+            'duration',
+            'beats',
+            'created_at'
+        ]

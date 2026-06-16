@@ -4,6 +4,7 @@ from rest_framework.response import Response
 
 from analysis.models import AudioAnalysis
 from analysis.serializers import AudioAnalysisSerializer
+from analysis.services.bpm_detector import analyze_audio
 
 
 class AudioAnalysisViewSet(viewsets.ModelViewSet):
@@ -29,7 +30,21 @@ class AudioAnalysisViewSet(viewsets.ModelViewSet):
             file=file
         )
 
+        result = analyze_audio(analysis.file.path)
+
+        analysis.bpm = result["bpm"]
+        analysis.duration = result["duration"]
+        analysis.beats = result["beats"]
+
+        analysis.save()
+
+        print("BPM:", result["bpm"])
+        print("Duración:", result["duration"])
+        print("Beats:", len(result["beats"]))
+
         return Response({
             "id": analysis.id,
-            "file": analysis.file.url
+            "bpm": analysis.bpm,
+            "duration": analysis.duration,
+            "beats": analysis.beats[:10]
         })
