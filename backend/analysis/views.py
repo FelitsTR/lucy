@@ -32,8 +32,8 @@ class AudioAnalysisViewSet(viewsets.ModelViewSet):
 
         result = analyze_audio(analysis.file.path)
 
-        analysis.bpm = round(result["bpm"])
-        analysis.duration = round(result["duration"])
+        analysis.bpm = round(result["bpm"], 2)
+        analysis.duration = round(result["duration"], 2)
         analysis.beats = result["beats"]
 
         analysis.save()
@@ -42,7 +42,8 @@ class AudioAnalysisViewSet(viewsets.ModelViewSet):
             "id": analysis.id,
             "bpm": analysis.bpm,
             "duration": analysis.duration,
-            "beats": analysis.beats[:10]
+            "beats": analysis.beats[:10],
+            "beats_count": len(analysis.beats),
         })
     
     @action(
