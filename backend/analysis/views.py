@@ -48,3 +48,20 @@ class AudioAnalysisViewSet(viewsets.ModelViewSet):
             "duration": analysis.duration,
             "beats": analysis.beats[:10]
         })
+    
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="beats",
+        url_name="beats"
+    )
+    def get_beats(self, request, pk=None):
+
+        instance = self.get_object()
+
+        return Response({
+        "id": instance.id,
+        "bpm": instance.bpm,
+        "duration": instance.duration,
+        "beats_count": len(instance.beats)
+    })

@@ -4,7 +4,7 @@ from django.db import models
 class AudioAnalysis(models.Model):
 
     file = models.FileField(upload_to='songs/')
-    original_filename = models.CharField(max_length=255)
+    original_filename = models.CharField(max_length=255, null=True)
     bpm = models.FloatField(blank=True, null=True)
     duration = models.FloatField(null=True)
     beats = models.JSONField(default=list)
