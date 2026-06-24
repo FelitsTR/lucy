@@ -7,7 +7,7 @@ class ApiService {
   final Dio dio = Dio();
 
   final String baseUrl =
-      "http://192.168.1.80:8000";
+      "http://192.168.1.76:8000";
 
   Future<Analysis> uploadFile(
     String filePath,

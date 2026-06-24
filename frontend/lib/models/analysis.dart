@@ -19,7 +19,7 @@ class Analysis {
       id: json["id"],
       bpm: json["bpm"].toDouble(),
       duration: json["duration"].toDouble(),
-      beatsCount: json["beats_count"],
+      beatsCount: (json["beats_count"] as num).toInt(),
     );
   }
 }

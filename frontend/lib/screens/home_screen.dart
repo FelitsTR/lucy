@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/analysis.dart';
 import '../services/api_services.dart';
 import 'package:file_picker/file_picker.dart';
+import '../utils/time_formatter.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,6 +16,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
 
   Analysis? analysis;
+  String? selectedFileName;
   bool isLoading = false;
   final ApiService apiService =
     ApiService();
@@ -41,70 +43,134 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             if (isLoading)
               const CircularProgressIndicator(),
-            if (analysis != null) ...[
-              Text(
-                "BPM: ${analysis!.bpm}",
-              ),
+            if (analysis != null)
+              Card(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Text(
+                        "🎵 ${selectedFileName ?? ''}",
+                        textAlign: TextAlign.center,
+                      ),
 
-              Text(
-                "Duración: ${analysis!.duration}",
-              ),
+                      SizedBox(height: 20),
 
-              Text(
-                "Beats: ${analysis!.beatsCount}",
+                      Text(
+                        "BPM",
+                        style: TextStyle(
+                          fontSize: 18,
+                        ),
+                      ),
+
+                      Text(
+                        analysis!.bpm.toString(),
+                        style: TextStyle(
+                          fontSize: 40,
+                          fontWeight:
+                              FontWeight.bold,
+                        ),
+                      ),
+
+                      SizedBox(height: 16),
+
+                      Text(
+                        "Duración",
+                      ),
+
+                      Text(
+                        TimeFormatter
+                            .formatSeconds(
+                          analysis!.duration,
+                        ),
+                      ),
+
+                      SizedBox(height: 16),
+
+                      Text(
+                        "Beats detectados",
+                      ),
+
+                      Text(
+                        analysis!.beatsCount.toString(),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ]
+            if (analysis == null)
+              ElevatedButton(
+                onPressed: pickAndUpload,
+                child: Text(
+                  "Seleccionar MP3",
+                ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Future<void> pickAndUpload()
-  async {
+  Future<void> pickAndUpload() async {
 
-    final result =
-        await FilePicker.platform
-            .pickFiles(
-      type: FileType.audio,
-    );
+  print("1. Entró al método");
 
-    if (result == null) {
-      return;
-    }
+  final result =
+      await FilePicker.platform.pickFiles(
+    type: FileType.audio,
+  );
 
-    final path =
-        result.files.single.path;
+  print("2. Terminó FilePicker");
 
-    if (path == null) {
-      return;
-    }
+  if (result == null) {
+    print("Usuario canceló");
+    return;
+  }
+
+  final path = result.files.single.path;
+
+  print("3. Path: $path");
+
+  if (path == null) {
+    print("Path nulo");
+    return;
+  }
+
+  setState(() {
+    isLoading = true;
+  });
+
+  try {
+
+    print("4. Subiendo archivo");
+
+    final response =
+        await apiService.uploadFile(path);
+
+    print("5. Respuesta recibida");
+    print(response);
 
     setState(() {
-      isLoading = true;
+      analysis = response;
     });
 
-    try {
+  } catch (e) {
 
-      final response =
-          await apiService.uploadFile(
-        path,
-      );
+    print("ERROR:");
+    print(e);
 
-      setState(() {
-        analysis = response;
-      });
+  } finally {
 
-    } catch (e) {
+    print("6. Finalizó");
 
-      print(e);
-
-    } finally {
-
-      setState(() {
-        isLoading = false;
-      });
-
-    }
+    setState(() {
+      isLoading = false;
+    });
   }
+
+  setState(() {
+    selectedFileName =
+        result.files.single.name;
+  });
+}
 }
