@@ -3,6 +3,7 @@ import '../models/analysis.dart';
 import '../services/api_services.dart';
 import 'package:file_picker/file_picker.dart';
 import '../utils/time_formatter.dart';
+import '../services/audio_player_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,8 +19,41 @@ class _HomeScreenState extends State<HomeScreen> {
   Analysis? analysis;
   String? selectedFileName;
   bool isLoading = false;
+  String? selectedFilePath;
+  Duration currentPosition = Duration.zero;
+  int nextBeatIndex = 0;
+  
+  final audioPlayerService =
+    AudioPlayerService();
   final ApiService apiService =
     ApiService();
+
+  @override
+  void initState() {
+    super.initState();
+
+    audioPlayerService.positionStream.listen(
+    (position) {
+
+      if (analysis != null) {
+
+        while (
+          nextBeatIndex <
+          analysis!.beats.length &&
+          position.inMilliseconds / 1000 >=
+              analysis!.beats[nextBeatIndex]
+        ) {
+
+          nextBeatIndex++;
+        }
+      }
+
+      setState(() {
+        currentPosition = position;
+      });
+    },
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -94,16 +128,50 @@ class _HomeScreenState extends State<HomeScreen> {
                       Text(
                         analysis!.beatsCount.toString(),
                       ),
+                      Text(
+                        "Beats recibidos: ${analysis!.beats.length}",
+                      ),
+                      Text(
+                        analysis!.beats
+                            .take(5)
+                            .join(", "),
+                      ),
+                      Text(
+                        "Posición actual",
+                      ),
+
+                      Text(
+                        TimeFormatter.formatSeconds(
+                          currentPosition.inSeconds.toDouble(),
+                        ),
+                      ),
+                      Text(
+                        "Beats recibidos: ${analysis!.beats.length}",
+                      ),
+                      if (analysis != null)
+                        Text(
+                          "Beat actual: $nextBeatIndex",
+                        ),
                     ],
                   ),
                 ),
               ),
-            if (analysis == null)
-              ElevatedButton(
-                onPressed: pickAndUpload,
-                child: Text(
-                  "Seleccionar MP3",
-                ),
+            ElevatedButton(
+              onPressed: () async {
+
+                if (selectedFilePath == null) {
+                  return;
+                }
+
+                await audioPlayerService.loadAudio(
+                  selectedFilePath!,
+                );
+
+                await audioPlayerService.play();
+              },
+              child: const Text(
+                "▶ Reproducir",
+              ),
             ),
           ],
         ),
@@ -113,26 +181,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> pickAndUpload() async {
 
-  print("1. Entró al método");
-
   final result =
       await FilePicker.platform.pickFiles(
     type: FileType.audio,
   );
 
-  print("2. Terminó FilePicker");
-
   if (result == null) {
-    print("Usuario canceló");
     return;
   }
 
   final path = result.files.single.path;
 
-  print("3. Path: $path");
+  selectedFilePath = path;
 
   if (path == null) {
-    print("Path nulo");
     return;
   }
 
@@ -142,13 +204,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   try {
 
-    print("4. Subiendo archivo");
-
     final response =
         await apiService.uploadFile(path);
-
-    print("5. Respuesta recibida");
-    print(response);
 
     setState(() {
       analysis = response;
@@ -156,12 +213,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   } catch (e) {
 
-    print("ERROR:");
-    print(e);
+    print("Error al subir el archivo: $e");
 
   } finally {
-
-    print("6. Finalizó");
 
     setState(() {
       isLoading = false;
